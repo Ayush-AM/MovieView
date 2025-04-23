@@ -1,0 +1,58 @@
+.home-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-top: 250px;  /* Increased padding for a more spacious look */
+    background: linear-gradient(135deg, #e61bc7, #80deea);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #003f5c;
+    text-align: center;
+  }
+  
+  .home-title {
+    font-size: 10rem;  /* Increased size for a bolder title */
+    margin-bottom: 100px;  /* More space below the title */
+    font-weight: bold;
+  }
+  
+  .home-subtitle {
+    font-size: 4.5rem;  /* Bigger subtitle */
+    max-width: 900px;  /* Allowing a little more space for the subtitle */
+    margin-bottom: 80px;  /* More space below the subtitle */
+  }
+  
+  .home-button {
+    padding: 25px 50px;  /* More padding to make it larger */
+    background-color: #39b517;
+    color: rgb(215, 22, 249);
+    border: none;
+    border-radius: 20px;  /* A bit more rounded for a smoother look */
+    font-size: 4rem;  /* Larger font size */
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .home-button:hover {
+    background-color: #ebf716;
+  }
+  
+  .forward-arrow {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 56px;  /* Increased size */
+    color: black;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .forward-arrow:hover {
+    color: black;
+    transform: scale(2.4);  /* A bit larger on hover */
+    transition: all 0.2s ease;
+  }

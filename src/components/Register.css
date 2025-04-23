@@ -1,0 +1,121 @@
+/* Register Container */
+.register-container {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  /* Back Arrow */
+  .back-arrow {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 24px;
+    color: #000000;  /* Black color for the back arrow */
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .back-arrow:hover {
+    color: #000000;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+  }
+  
+  /* Forward Arrow */
+  .forward-arrow {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 24px;
+    color: #000000;  /* Black color for the forward arrow */
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .forward-arrow:hover {
+    color: #000000;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+  }
+  
+  /* Register Card */
+  .register-card {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 30px 40px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .register-card input {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+  }
+  
+  .register-card button {
+    padding: 12px;
+    background-color: #5c33f6;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .register-card button:hover {
+    background-color: #000000;
+  }
+  
+  .register-card h2 {
+    margin-bottom: 20px;
+    color: #1e034d;
+  }
+  
+  .register-card input {
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #1e034d;
+    font-size: 1rem;
+  }
+  
+  .register-card button {
+    width: 100%;
+    padding: 12px;
+    background-color: #08143a;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  .register-card button:hover {
+    background-color: #1e034d;
+  }
+  
+  .register-card p {
+    margin-top: 15px;
+  }
+  
+  .register-card a {
+    color: #1e034d;
+    text-decoration: none;
+    font-weight: bold;
+  }
