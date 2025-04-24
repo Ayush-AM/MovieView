@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieView Screenshot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #141414;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Navbar */
+        .navbar {
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+            color: #e50914;
+            text-decoration: none;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .logo-icon {
+            margin-right: 10px;
+            font-size: 2rem;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .logout-btn {
+            background-color: rgba(229, 9, 20, 0.2);
+            color: #e50914;
+            border: 1px solid #e50914;
+        }
+        
+        .logout-btn:hover {
+            background-color: rgba(229, 9, 20, 0.3);
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            height: 70vh;
+            position: relative;
+            background-image: url('https://image.tmdb.org/t/p/original/tLsc8SCFO0rMVgVyNm9XtfnyX84.jpg');
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 40px;
+        }
+        
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%);
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            padding: 0 10%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .hero-title {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .hero-meta {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .hero-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #f5c518;
+        }
+        
+        .hero-overview {
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .hero-btn {
+            padding: 12px 24px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .primary-btn {
+            background-color: #e50914;
+            color: white;
+        }
+        
+        .secondary-btn {
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+        
+        /* Movie Grid */
+        .movie-section {
+            margin: 40px 0;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .movie-card {
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .movie-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .movie-poster-wrapper {
+            position: relative;
+            aspect-ratio: 2/3;
+            overflow: hidden;
+        }
+        
+        .movie-poster {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .movie-poster-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 40px 10px 10px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        
+        .movie-poster-rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #f5c518;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .movie-info {
+            padding: 15px;
+        }
+        
+        .movie-card-title {
+            margin-bottom: 5px;
+            font-size: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .movie-year {
+            color: #aaa;
+            font-weight: normal;
+            font-size: 0.9rem;
+        }
+        
+        .movie-genres {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+        
+        .movie-cast {
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .cast-header {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #e50914;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .cast-list {
+            color: #aaa;
+        }
+        
+        .cast-item {
+            margin-bottom: 2px;
+        }
+        
+        .character-name {
+            color: #888;
+            font-style: italic;
+        }
+        
+        /* Movie tabs */
+        .movie-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab-button {
+            background: none;
+            border: none;
+            color: #aaa;
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+        
+        .tab-button.active {
+            color: white;
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #e50914;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="navbar-logo">
+                <span class="logo-icon">🎬</span>
+                <span class="logo-text">MovieView</span>
+            </a>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn active">
+                    <span>🏠</span>
+                    <span>Home</span>
+                </button>
+                <button class="nav-btn">
+                    <span>🎞️</span>
+                    <span>Movies</span>
+                </button>
+                <button class="nav-btn logout-btn">
+                    <span>🚪</span>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Oppenheimer</h1>
+            <div class="hero-meta">
+                <span class="hero-year">2023</span>
+                <span class="hero-rating">⭐ 8.5</span>
+            </div>
+            <p class="hero-overview">
+                The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb during World War II.
+            </p>
+            <div class="hero-buttons">
+                <button class="hero-btn primary-btn">
+                    <span>▶️</span> Watch Now
+                </button>
+                <button class="hero-btn secondary-btn">
+                    <span>ℹ️</span> More Info
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Popular Movies Section -->
+        <div class="movie-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span>🔥</span> Popular Movies
+                </h2>
+            </div>
+            
+            <!-- Movie Tabs -->
+            <div class="movie-tabs">
+                <button class="tab-button active">
+                    <span>🔥</span> Popular
+                </button>
+                <button class="tab-button">
+                    <span>🕰️</span> Latest Releases
+                </button>
+                <button class="tab-button">
+                    <span>⭐</span> Top Rated
+                </button>
+            </div>
+            
+            <div class="movie-grid">
+                <!-- Movie Card 1 -->
+                <div class="movie-card">
+                    <div class="movie-poster-wrapper">
+                        <img class="movie-poster" src="https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" alt="Barbie">
+                        <div class="movie-poster-overlay">
+                            <div class="movie-poster-rating">⭐ 7.2</div>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-card-title">Barbie <span class="movie-year">(2023)</span></h3>
+                        <p class="movie-genres">Comedy, Adventure, Fantasy</p>
+                        <div class="movie-cast">
+                            <div class="cast-header">
+                                <span>👥</span> Cast
+                            </div>
+                            <div class="cast-list">
+                                <div class="cast-item">Margot Robbie <span class="character-name">as Barbie</span></div>
+                                <div class="cast-item">Ryan Gosling <span class="character-name">as Ken</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Movie Card 2 -->
+                <div class="movie-card">
+                    <div class="movie-poster-wrapper">
+                        <img class="movie-poster" src="https://image.tmdb.org/t/p/w500/rktDFPbfHfUbArZ6OOOKsXcv0Bm.jpg" alt="Mission: Impossible - Dead Reckoning Part One">
+                        <div class="movie-poster-overlay">
+                            <div class="movie-poster-rating">⭐ 7.7</div>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-card-title">Mission: Impossible <span class="movie-year">(2023)</span></h3>
+                        <p class="movie-genres">Action, Thriller, Adventure</p>
+                        <div class="movie-cast">
+                            <div class="cast-header">
+                                <span>👥</span> Cast
+                            </div>
+                            <div class="cast-list">
+                                <div class="cast-item">Tom Cruise <span class="character-name">as Ethan Hunt</span></div>
+                                <div class="cast-item">Hayley Atwell <span class="character-name">as Grace</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Movie Card 3 -->
+                <div class="movie-card">
+                    <div class="movie-poster-wrapper">
+                        <img class="movie-poster" src="https://image.tmdb.org/t/p/w500/cvsXj3I9Q1i9MBrPOewHIRIGwfD.jpg" alt="Guardians of the Galaxy Vol. 3">
+                        <div class="movie-poster-overlay">
+                            <div class="movie-poster-rating">⭐ 8.0</div>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-card-title">Guardians of the Galaxy Vol. 3 <span class="movie-year">(2023)</span></h3>
+                        <p class="movie-genres">Science Fiction, Adventure, Action</p>
+                        <div class="movie-cast">
+                            <div class="cast-header">
+                                <span>👥</span> Cast
+                            </div>
+                            <div class="cast-list">
+                                <div class="cast-item">Chris Pratt <span class="character-name">as Peter Quill</span></div>
+                                <div class="cast-item">Zoe Saldaña <span class="character-name">as Gamora</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Movie Card 4 -->
+                <div class="movie-card">
+                    <div class="movie-poster-wrapper">
+                        <img class="movie-poster" src="https://image.tmdb.org/t/p/w500/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg" alt="Fast X">
+                        <div class="movie-poster-overlay">
+                            <div class="movie-poster-rating">⭐ 7.3</div>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-card-title">Fast X <span class="movie-year">(2023)</span></h3>
+                        <p class="movie-genres">Action, Crime, Thriller</p>
+                        <div class="movie-cast">
+                            <div class="cast-header">
+                                <span>👥</span> Cast
+                            </div>
+                            <div class="cast-list">
+                                <div class="cast-item">Vin Diesel <span class="character-name">as Dominic Toretto</span></div>
+                                <div class="cast-item">Jason Momoa <span class="character-name">as Dante</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Movie Card 5 -->
+                <div class="movie-card">
+                    <div class="movie-poster-wrapper">
+                        <img class="movie-poster" src="https://image.tmdb.org/t/p/w500/A7JQ7MIV5fkIxceI5hizRIe6DRL.jpg" alt="The Flash">
+                        <div class="movie-poster-overlay">
+                            <div class="movie-poster-rating">⭐ 6.9</div>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-card-title">The Flash <span class="movie-year">(2023)</span></h3>
+                        <p class="movie-genres">Action, Adventure, Science Fiction</p>
+                        <div class="movie-cast">
+                            <div class="cast-header">
+                                <span>👥</span> Cast
+                            </div>
+                            <div class="cast-list">
+                                <div class="cast-item">Ezra Miller <span class="character-name">as Barry Allen</span></div>
+                                <div class="cast-item">Michael Keaton <span class="character-name">as Bruce Wayne</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
