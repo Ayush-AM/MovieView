@@ -10,42 +10,7 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
 
-// Helper function for API requests with error handling
-const fetchFromApi = async (url) => {
-  // Add API key as query parameter if not already present
-  const urlWithApiKey = url.includes('?') 
-    ? `${url}&api_key=${API_KEY}` 
-    : `${url}?api_key=${API_KEY}`;
-  
-  try {
-    console.log(`Attempting to fetch: ${urlWithApiKey}`);
-    
-    const headers = {
-      'Authorization': `Bearer ${ACCESS_TOKEN}`,
-      'Content-Type': 'application/json;charset=utf-8'
-    };
-    
-    const response = await fetch(urlWithApiKey, { 
-      headers,
-      method: 'GET'
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API error response: ${errorText}`);
-      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log(`Data received for ${urlWithApiKey.split('?')[0]}`);
-    
-    return data;
-  } catch (error) {
-    console.error(`Error fetching from API: ${urlWithApiKey}`, error);
-    throw error;
-  }
-};
-
+// Home component
 const Home = () => {
   const navigate = useNavigate();
   const [trendingMovies, setTrendingMovies] = useState([]);

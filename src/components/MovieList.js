@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaStar, FaThumbsUp, FaClock, FaFire, FaFilter, FaHeart, FaUser, FaTimes, FaPlayCircle, FaLink, FaCalendarAlt, FaTv, FaSearch, FaPlay, FaExternalLinkAlt, FaGlobe, FaImdb } from "react-icons/fa";
+import { FaArrowLeft, FaStar, FaClock, FaFire, FaFilter, FaHeart, FaUser, FaTimes, FaCalendarAlt, FaSearch, FaPlay, FaExternalLinkAlt } from "react-icons/fa";
 import { FaRegHeart } from "react-icons/fa";
 import MoviePoster from './MoviePoster';
 import '../App.css';
@@ -14,54 +14,6 @@ const BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
 
 // Cache API responses for better performance
 const apiCache = new Map();
-
-// Helper function for API requests with error handling and caching
-const fetchFromApi = async (url) => {
-  // Add API key as query parameter if not already present
-  const urlWithApiKey = url.includes('?') 
-    ? `${url}&api_key=${API_KEY}` 
-    : `${url}?api_key=${API_KEY}`;
-  
-  // Check if we have a cached response
-  if (apiCache.has(urlWithApiKey)) {
-    return apiCache.get(urlWithApiKey);
-  }
-  
-  try {
-    console.log(`Attempting to fetch: ${urlWithApiKey}`);
-    
-    const headers = {
-      'Authorization': `Bearer ${ACCESS_TOKEN}`,
-      'Content-Type': 'application/json;charset=utf-8'
-    };
-    
-    console.log('Request headers:', headers);
-    
-    const response = await fetch(urlWithApiKey, { 
-      headers,
-      method: 'GET'
-    });
-    
-    console.log(`Response status: ${response.status} ${response.statusText}`);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API error response: ${errorText}`);
-      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log(`Data received for ${urlWithApiKey.split('?')[0]}`);
-    
-    // Cache the response
-    apiCache.set(urlWithApiKey, data);
-    
-    return data;
-  } catch (error) {
-    console.error(`Error fetching from API: ${urlWithApiKey}`, error);
-    throw error;
-  }
-};
 
 const MovieList = () => {
   const navigate = useNavigate();
@@ -468,22 +420,82 @@ const MovieList = () => {
     return uniqueMovies;
   };
 
-  // Generate recommendations based on user preferences
+  // Update recommendations when user preferences change
   useEffect(() => {
-    if (userPreferences.favoriteGenres.length > 0) {
-      const allMovies = getAllMovies();
+    // Move getAllMovies inside this useEffect to avoid dependency issues
+    const getAllMoviesLocal = () => {
+      // Combine all movies and remove duplicates
+      const allMovies = [...popularMovies, ...latestMovies, ...topRatedMovies];
+      const uniqueMovies = Array.from(new Map(allMovies.map(movie => [movie.id, movie])).values());
+      return uniqueMovies;
+    };
+    
+    // Generate recommendations based on user preferences
+    if (userPreferences.likedMovies.length > 0) {
+      // Get similar movies for each liked movie
+      const fetchRecommendations = async () => {
+        try {
+          const recommendationPromises = userPreferences.likedMovies.map(async movieId => {
+            const url = `${BASE_URL}/movie/${movieId}/similar?api_key=${API_KEY}`;
+            const response = await fetch(url, {
+              headers: {
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                'Content-Type': 'application/json;charset=utf-8'
+              }
+            });
+            
+            if (!response.ok) return [];
+            
+            const data = await response.json();
+            return data.results.slice(0, 5); // Get top 5 similar movies
+          });
+          
+          const recommendationResults = await Promise.all(recommendationPromises);
+          let allRecommendations = recommendationResults.flat();
+          
+          // Remove duplicates and already liked movies
+          allRecommendations = allRecommendations.filter((movie, index, self) => 
+            index === self.findIndex(m => m.id === movie.id) && 
+            !userPreferences.likedMovies.includes(movie.id)
+          );
+          
+          // Limit to 10 recommendations
+          setRecommendedMovies(transformMovieData(allRecommendations.slice(0, 10)));
+        } catch (error) {
+          console.error('Error fetching recommendations:', error);
+        }
+      };
       
-      // Get recommendations based on favorite genres and not already liked
-      const recommendations = allMovies
-        .filter(movie => !userPreferences.likedMovies.includes(movie.id))
-        .filter(movie => {
-          return movie.genre.some(genre => userPreferences.favoriteGenres.includes(genre));
-        })
-        .sort((a, b) => b.rating - a.rating); // Sort by rating
-      
-      setRecommendedMovies(recommendations);
+      fetchRecommendations();
     }
-  }, [userPreferences, popularMovies, latestMovies, topRatedMovies]);
+  }, [userPreferences, popularMovies, latestMovies, topRatedMovies]); // Added movie arrays as dependencies instead of getAllMovies
+
+  // Fetch cast for search results
+  useEffect(() => {
+    if (selectedMovie && selectedMovie.id) {
+      fetchMovieDetails(selectedMovie.id);
+      fetchWatchProviders(selectedMovie.id);
+    }
+    
+    // Fetch cast for each movie
+    popularMovies.forEach(movie => {
+      if (!castInfo[movie.id]) {
+        fetchMovieCast(movie.id);
+      }
+    });
+    
+    latestMovies.forEach(movie => {
+      if (!castInfo[movie.id]) {
+        fetchMovieCast(movie.id);
+      }
+    });
+    
+    topRatedMovies.forEach(movie => {
+      if (!castInfo[movie.id]) {
+        fetchMovieCast(movie.id);
+      }
+    });
+  }, [selectedMovie, popularMovies, latestMovies, topRatedMovies, castInfo, fetchMovieCast, fetchMovieDetails, fetchWatchProviders]); // Added all required dependencies
 
   // Function to get genre names for a movie
   const getGenreNames = (genreIds) => {
@@ -536,46 +548,20 @@ const MovieList = () => {
   };
 
   const openWatchLink = (url) => {
-    window.open(url, '_blank');
-  };
-
-  const renderProviderLogos = (providers, title) => {
-    if (!providers || providers.length === 0) return null;
-    
-    return (
-      <div className="provider-section">
-        <h4>{title}</h4>
-        <div className="provider-logos">
-          {providers.slice(0, 4).map((provider, index) => (
-            <img 
-              key={index}
-              src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
-              alt={provider.provider_name}
-              title={provider.provider_name}
-              className="provider-logo"
-              onClick={() => openWatchLink(provider.link || selectedMovie.homepage)}
-              style={{ width: '40px', height: '40px', margin: '0 5px 5px 0', borderRadius: '8px' }}
-            />
-          ))}
-        </div>
-      </div>
-    );
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
   // Render movie details popup
   const renderMovieDetailsPopup = () => {
-    if (!selectedMovie) return null;
+    if (!selectedMovie || !movieDetails) return null;
     
     // Handle like from the popup
     const handleLikeMovie = () => {
       likeMovie(selectedMovie.id);
     };
     
-    // Open watch provider link
-    const openWatchLink = (url) => {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    };
-
     // Close popup when clicking outside content
     const handleBackdropClick = (e) => {
       if (e.target === e.currentTarget) {
