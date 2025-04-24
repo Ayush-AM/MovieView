@@ -4,8 +4,8 @@ import { FaArrowRight, FaFilm, FaThumbsUp, FaStar, FaSearch, FaPlay, FaInfoCircl
 import '../App.css';
 
 // TMDB API key and URLs
-const API_KEY = '3fd2be6f0c70a2a598f084ddfb75487c'; // v3 API key for query parameter
-const ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzZmQyYmU2ZjBjNzBhMmE1OThmMDg0ZGRmYjc1NDg3YyIsInN1YiI6IjY1ZjBjODM3OTYzODY0MDEzMDQ0NThjZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.XRlpJ13Hhw_RST-dfwxfYUFmvsi-4L86JKpnJLMc8Kk'; // JWT token format for v4 API
+const API_KEY = process.env.REACT_APP_TMDB_API_KEY || '3fd2be6f0c70a2a598f084ddfb75487c'; // v3 API key for query parameter
+const ACCESS_TOKEN = process.env.REACT_APP_TMDB_ACCESS_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzZmQyYmU2ZjBjNzBhMmE1OThmMDg0ZGRmYjc1NDg3YyIsInN1YiI6IjY1ZjBjODM3OTYzODY0MDEzMDQ0NThjZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.XRlpJ13Hhw_RST-dfwxfYUFmvsi-4L86JKpnJLMc8Kk'; // JWT token format for v4 API
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
