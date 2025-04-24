@@ -6,10 +6,62 @@ import MoviePoster from './MoviePoster';
 import '../App.css';
 
 // TMDB API key and URLs
-const API_KEY = '3fd2be6f0c70a2a598f084ddfb75487c'; // This is a demo key for testing
+const API_KEY = '3fd2be6f0c70a2a598f084ddfb75487c'; // v3 API key for query parameter
+const ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzZmQyYmU2ZjBjNzBhMmE1OThmMDg0ZGRmYjc1NDg3YyIsInN1YiI6IjY1ZjBjODM3OTYzODY0MDEzMDQ0NThjZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.XRlpJ13Hhw_RST-dfwxfYUFmvsi-4L86JKpnJLMc8Kk'; // JWT token format for v4 API
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
+
+// Cache API responses for better performance
+const apiCache = new Map();
+
+// Helper function for API requests with error handling and caching
+const fetchFromApi = async (url) => {
+  // Add API key as query parameter if not already present
+  const urlWithApiKey = url.includes('?') 
+    ? `${url}&api_key=${API_KEY}` 
+    : `${url}?api_key=${API_KEY}`;
+  
+  // Check if we have a cached response
+  if (apiCache.has(urlWithApiKey)) {
+    return apiCache.get(urlWithApiKey);
+  }
+  
+  try {
+    console.log(`Attempting to fetch: ${urlWithApiKey}`);
+    
+    const headers = {
+      'Authorization': `Bearer ${ACCESS_TOKEN}`,
+      'Content-Type': 'application/json;charset=utf-8'
+    };
+    
+    console.log('Request headers:', headers);
+    
+    const response = await fetch(urlWithApiKey, { 
+      headers,
+      method: 'GET'
+    });
+    
+    console.log(`Response status: ${response.status} ${response.statusText}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API error response: ${errorText}`);
+      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log(`Data received for ${urlWithApiKey.split('?')[0]}`);
+    
+    // Cache the response
+    apiCache.set(urlWithApiKey, data);
+    
+    return data;
+  } catch (error) {
+    console.error(`Error fetching from API: ${urlWithApiKey}`, error);
+    throw error;
+  }
+};
 
 const MovieList = () => {
   const navigate = useNavigate();
@@ -54,12 +106,29 @@ const MovieList = () => {
     }
     
     setIsSearching(true);
+    setError(null);
     
     try {
-      const response = await fetch(
-        `${BASE_URL}/search/movie?api_key=${API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`
-      );
+      // Use a direct API call with both methods of authentication for maximum compatibility
+      const searchUrl = `${BASE_URL}/search/movie?api_key=${API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`;
+      
+      console.log(`Searching movies with query: ${query}`);
+      
+      const response = await fetch(searchUrl, {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json;charset=utf-8'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Search API error: ${errorText}`);
+        throw new Error(`Search failed with status ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log(`Search found ${data.results.length} results`);
       
       // Transform search results
       const transformedResults = transformMovieData(data.results);
@@ -74,6 +143,7 @@ const MovieList = () => {
     } catch (error) {
       console.error("Error searching movies:", error);
       setSearchResults([]);
+      setError('Failed to search movies. Please try again later.');
     }
   };
 
@@ -97,15 +167,31 @@ const MovieList = () => {
     setIsSearching(false);
   };
 
-  // Fetch genres
+  // Fetch genres with direct API call
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const response = await fetch(`${BASE_URL}/genre/movie/list?api_key=${API_KEY}`);
+        const genreUrl = `${BASE_URL}/genre/movie/list?api_key=${API_KEY}`;
+        
+        const response = await fetch(genreUrl, {
+          headers: {
+            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json;charset=utf-8'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Genres API failed with status ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log(`Fetched ${data.genres.length} genres`);
+        
         setGenres([{ id: 0, name: 'All' }, ...data.genres]);
       } catch (err) {
         console.error('Error fetching genres:', err);
+        // Set default "All" option even if genres couldn't be fetched
+        setGenres([{ id: 0, name: 'All' }]);
       }
     };
     
@@ -116,13 +202,13 @@ const MovieList = () => {
   const transformMovieData = (movies) => {
     return movies.map(movie => ({
       id: movie.id,
-      title: movie.title,
+      title: movie.title || 'Unknown Title',
       year: movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown',
-      rating: movie.vote_average,
-      genre: movie.genre_ids,
+      rating: movie.vote_average || 0, // Default to 0 if undefined
+      genre: movie.genre_ids || [],
       poster: movie.poster_path ? `${IMG_URL}${movie.poster_path}` : null,
-      overview: movie.overview,
-      release_date: movie.release_date
+      overview: movie.overview || 'No overview available',
+      release_date: movie.release_date || ''
     }));
   };
 
@@ -132,9 +218,19 @@ const MovieList = () => {
     if (castInfo[movieId]) return;
     
     try {
-      const response = await fetch(
-        `${BASE_URL}/movie/${movieId}/credits?api_key=${API_KEY}`
-      );
+      const castUrl = `${BASE_URL}/movie/${movieId}/credits?api_key=${API_KEY}`;
+      
+      const response = await fetch(castUrl, {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json;charset=utf-8'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Cast API failed with status ${response.status} for movie ${movieId}`);
+      }
+      
       const data = await response.json();
       
       // Get top 3 cast members
@@ -158,9 +254,19 @@ const MovieList = () => {
   // Fetch detailed movie information
   const fetchMovieDetails = async (movieId) => {
     try {
-      const response = await fetch(
-        `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}&append_to_response=videos,similar`
-      );
+      const detailsUrl = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}&append_to_response=videos,similar`;
+      
+      const response = await fetch(detailsUrl, {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json;charset=utf-8'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Movie details API failed with status ${response.status} for movie ${movieId}`);
+      }
+      
       const data = await response.json();
       setMovieDetails(data);
       
@@ -174,14 +280,23 @@ const MovieList = () => {
   // Fetch watch providers for a movie
   const fetchWatchProviders = async (movieId) => {
     try {
-      const response = await fetch(
-        `${BASE_URL}/movie/${movieId}/watch/providers?api_key=${API_KEY}`
-      );
+      const providersUrl = `${BASE_URL}/movie/${movieId}/watch/providers?api_key=${API_KEY}`;
+      
+      const response = await fetch(providersUrl, {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json;charset=utf-8'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Watch providers API failed with status ${response.status} for movie ${movieId}`);
+      }
+      
       const data = await response.json();
       
       // Store the entire results object, not just a specific country
       setWatchProviders(data);
-      console.log("Watch providers data:", data); // Debug log
     } catch (error) {
       console.error(`Error fetching watch providers for movie ${movieId}:`, error);
       setWatchProviders(null);
@@ -212,34 +327,75 @@ const MovieList = () => {
     document.body.style.overflow = 'auto';
   };
 
-  // Fetch popular movies
+  // Fetch movies based on category and genre
   useEffect(() => {
     const fetchMovies = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
+        console.log(`Fetching movies for genre ID: ${selectedGenre}`);
+        
+        // Use direct fetch with both authorization methods for these requests
         // Popular movies
         let popularUrl = `${BASE_URL}/movie/popular?api_key=${API_KEY}&language=en-US&page=1`;
         if (selectedGenre !== 0) {
           popularUrl = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${selectedGenre}&sort_by=popularity.desc`;
         }
-        const popularResponse = await fetch(popularUrl);
+        
+        const popularResponse = await fetch(popularUrl, {
+          headers: {
+            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json;charset=utf-8'
+          }
+        });
+        
+        if (!popularResponse.ok) {
+          throw new Error(`Popular movies API failed with status ${popularResponse.status}`);
+        }
+        
         const popularData = await popularResponse.json();
+        console.log(`Fetched ${popularData.results.length} popular movies`);
         
         // Latest movies (now playing)
         let latestUrl = `${BASE_URL}/movie/now_playing?api_key=${API_KEY}&language=en-US&page=1`;
         if (selectedGenre !== 0) {
           latestUrl = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${selectedGenre}&sort_by=release_date.desc`;
         }
-        const latestResponse = await fetch(latestUrl);
+        
+        const latestResponse = await fetch(latestUrl, {
+          headers: {
+            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json;charset=utf-8'
+          }
+        });
+        
+        if (!latestResponse.ok) {
+          throw new Error(`Latest movies API failed with status ${latestResponse.status}`);
+        }
+        
         const latestData = await latestResponse.json();
+        console.log(`Fetched ${latestData.results.length} latest movies`);
         
         // Top rated movies
         let topRatedUrl = `${BASE_URL}/movie/top_rated?api_key=${API_KEY}&language=en-US&page=1`;
         if (selectedGenre !== 0) {
           topRatedUrl = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${selectedGenre}&sort_by=vote_average.desc&vote_count.gte=1000`;
         }
-        const topRatedResponse = await fetch(topRatedUrl);
+        
+        const topRatedResponse = await fetch(topRatedUrl, {
+          headers: {
+            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json;charset=utf-8'
+          }
+        });
+        
+        if (!topRatedResponse.ok) {
+          throw new Error(`Top rated movies API failed with status ${topRatedResponse.status}`);
+        }
+        
         const topRatedData = await topRatedResponse.json();
+        console.log(`Fetched ${topRatedData.results.length} top rated movies`);
         
         const popularMoviesData = transformMovieData(popularData.results);
         const latestMoviesData = transformMovieData(latestData.results);
@@ -266,8 +422,13 @@ const MovieList = () => {
         
         setError(null);
       } catch (err) {
-        setError('Failed to fetch movies. Please try again later.');
         console.error('Error fetching movies:', err);
+        setError('Failed to fetch movies. Please try again later.');
+        
+        // Set empty arrays to prevent app from crashing
+        setPopularMovies([]);
+        setLatestMovies([]);
+        setTopRatedMovies([]);
       } finally {
         setLoading(false);
       }
@@ -570,7 +731,7 @@ const MovieList = () => {
                       gap: '5px'
                     }}>
                       <FaStar className="rating-icon" style={{color: '#e50914'}} /> 
-                      {movieDetails.vote_average.toFixed(1)}
+                      {movieDetails.vote_average ? movieDetails.vote_average.toFixed(1) : '0.0'}
                     </div>
                     <div className="movie-details-runtime">
                       {movieDetails.runtime && `${movieDetails.runtime} min`}
@@ -1074,7 +1235,7 @@ const MovieList = () => {
                     <MoviePoster posterUrl={movie.poster} title={movie.title} />
                     <div className="movie-poster-overlay">
                       <div className="movie-poster-rating">
-                        <FaStar /> {movie.rating.toFixed(1)}
+                        <FaStar /> {movie.rating ? movie.rating.toFixed(1) : '0.0'}
                       </div>
                     </div>
 
@@ -1157,7 +1318,7 @@ const MovieList = () => {
                     <MoviePoster posterUrl={movie.poster} title={movie.title} />
                     <div className="movie-poster-overlay">
                       <div className="movie-poster-rating">
-                        <FaStar /> {movie.rating.toFixed(1)}
+                        <FaStar /> {movie.rating ? movie.rating.toFixed(1) : '0.0'}
                       </div>
                     </div>
                   </div>
@@ -1204,7 +1365,7 @@ const MovieList = () => {
                     <MoviePoster posterUrl={movie.poster} title={movie.title} />
                     <div className="movie-poster-overlay">
                       <div className="movie-poster-rating">
-                        <FaStar /> {movie.rating.toFixed(1)}
+                        <FaStar /> {movie.rating ? movie.rating.toFixed(1) : '0.0'}
                       </div>
                     </div>
                     

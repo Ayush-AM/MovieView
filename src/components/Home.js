@@ -4,10 +4,47 @@ import { FaArrowRight, FaFilm, FaThumbsUp, FaStar, FaSearch, FaPlay, FaInfoCircl
 import '../App.css';
 
 // TMDB API key and URLs
-const API_KEY = '3fd2be6f0c70a2a598f084ddfb75487c'; // This is a demo key for testing
+const API_KEY = '3fd2be6f0c70a2a598f084ddfb75487c'; // v3 API key for query parameter
+const ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzZmQyYmU2ZjBjNzBhMmE1OThmMDg0ZGRmYjc1NDg3YyIsInN1YiI6IjY1ZjBjODM3OTYzODY0MDEzMDQ0NThjZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.XRlpJ13Hhw_RST-dfwxfYUFmvsi-4L86JKpnJLMc8Kk'; // JWT token format for v4 API
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_URL = 'https://image.tmdb.org/t/p/original';
+
+// Helper function for API requests with error handling
+const fetchFromApi = async (url) => {
+  // Add API key as query parameter if not already present
+  const urlWithApiKey = url.includes('?') 
+    ? `${url}&api_key=${API_KEY}` 
+    : `${url}?api_key=${API_KEY}`;
+  
+  try {
+    console.log(`Attempting to fetch: ${urlWithApiKey}`);
+    
+    const headers = {
+      'Authorization': `Bearer ${ACCESS_TOKEN}`,
+      'Content-Type': 'application/json;charset=utf-8'
+    };
+    
+    const response = await fetch(urlWithApiKey, { 
+      headers,
+      method: 'GET'
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API error response: ${errorText}`);
+      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log(`Data received for ${urlWithApiKey.split('?')[0]}`);
+    
+    return data;
+  } catch (error) {
+    console.error(`Error fetching from API: ${urlWithApiKey}`, error);
+    throw error;
+  }
+};
 
 const Home = () => {
   const navigate = useNavigate();
@@ -20,10 +57,23 @@ const Home = () => {
   useEffect(() => {
     const fetchTrendingMovies = async () => {
       try {
-        const response = await fetch(
-          `${BASE_URL}/trending/movie/week?api_key=${API_KEY}`
-        );
+        const trendingUrl = `${BASE_URL}/trending/movie/week?api_key=${API_KEY}`;
+        
+        console.log('Fetching trending movies for home page');
+        
+        const response = await fetch(trendingUrl, {
+          headers: {
+            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json;charset=utf-8'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Trending movies API failed with status ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log(`Fetched ${data.results.length} trending movies`);
         
         // Filter movies with a backdrop
         const moviesWithBackdrop = data.results.filter(m => m.backdrop_path);
@@ -196,7 +246,7 @@ const Home = () => {
                 alignItems: 'center',
                 gap: '5px'
               }}>
-                <FaStar style={{color: '#f5c518'}} /> {featuredMovie.vote_average.toFixed(1)}
+                <FaStar style={{color: '#f5c518'}} /> {featuredMovie.vote_average ? featuredMovie.vote_average.toFixed(1) : '0.0'}
               </span>
             </div>
             <p className="hero-overview" style={{
@@ -552,7 +602,7 @@ const Home = () => {
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        <FaStar style={{color: '#f5c518'}} /> {movie.vote_average.toFixed(1)}
+                        <FaStar style={{color: '#f5c518'}} /> {movie.vote_average ? movie.vote_average.toFixed(1) : '0.0'}
                       </span>
                     </div>
                     
